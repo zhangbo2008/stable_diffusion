@@ -22,6 +22,8 @@ width = 512 #@param {type:"number"}
 save_dir='/save666'
 import os
 sample_dir = os.path.join(save_dir, "samples")
+
+os.makedirs(sample_dir, exist_ok=True)
 with autocast("cuda"), torch.inference_mode():
     images = pipe(
         prompt,

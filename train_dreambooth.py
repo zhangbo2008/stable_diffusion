@@ -1,7 +1,11 @@
+#参考:https://huggingface.co/docs/diffusers/training/dreambooth
+
 concepts_list = [
     {
         "instance_prompt":      "photo of zhangyi",
         "instance_data_dir":    "aaa_only_face",
+                "class_prompt":         "photo of a person",
+        "class_data_dir":       "person"
     },
 ]
 OUTPUT_DIR = "/content/" + 'model_out'
@@ -321,10 +325,10 @@ class DreamBoothDataset(Dataset):
                 (x, concept["instance_prompt"])
                 for x in Path(concept["instance_data_dir"]).iterdir()
                 if x.is_file() and not str(x).endswith(".txt")
-            ]
+            ]##inst_img_path里面是文件和提示词tumple组成的数组.
             self.instance_images_path.extend(inst_img_path)
 
-            if with_prior_preservation:#???????????????做什么用的????
+            if with_prior_preservation:#???????????????做什么用的????#======这个一定是要开启的. 用来提升效果. 比如输入张译, 那么class_prompt就是person. 张译是instance_prompt
                 class_img_path = [(x, concept["class_prompt"]) for x in Path(concept["class_data_dir"]).iterdir() if x.is_file()]
                 self.class_images_path.extend(class_img_path[:num_class_images])
 
@@ -480,10 +484,10 @@ def main(args):
         pipeline = None
         for concept in args.concepts_list:
             class_images_dir = Path(concept["class_data_dir"])
-            class_images_dir.mkdir(parents=True, exist_ok=True)
+            class_images_dir.mkdir(parents=True, exist_ok=True)#=======创建classdir
             cur_class_images = len(list(class_images_dir.iterdir()))
-
-            if cur_class_images < args.num_class_images:
+#========如果当前class的dir里面的图片数量不够.那么我们就生成!!!!!!!!
+            if cur_class_images < args.num_class_images:#num_class_images这个参数很重要一定要足够大.
                 torch_dtype = torch.float16 if accelerator.device.type == "cuda" else torch.float32
                 if pipeline is None:
                     pipeline = StableDiffusionPipeline.from_pretrained(
@@ -529,7 +533,7 @@ def main(args):
         del pipeline
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-
+#============重新加载全部模型用来训练.
     # Load the tokenizer
     if args.tokenizer_name:
         tokenizer = CLIPTokenizer.from_pretrained(
@@ -618,13 +622,15 @@ def main(args):
         hflip=args.hflip,
         read_prompts_from_txts=args.read_prompts_from_txts,
     )
-
+#=================这部分是模型的编码部分.
     def collate_fn(examples):
+        #instance部分放入编码.
         input_ids = [example["instance_prompt_ids"] for example in examples]
         pixel_values = [example["instance_images"] for example in examples]
 
         # Concat class and instance examples for prior preservation.
         # We do this to avoid doing two forward passes.
+        #再编码进入class部分.======就这么简单. 多加点class数据, 这样他就能区分张译和人的区别了..........
         if args.with_prior_preservation:
             input_ids += [example["class_prompt_ids"] for example in examples]
             pixel_values += [example["class_images"] for example in examples]
@@ -660,7 +666,7 @@ def main(args):
     vae.to(accelerator.device, dtype=weight_dtype)
     if not args.train_text_encoder:
         text_encoder.to(accelerator.device, dtype=weight_dtype)
-
+#========把训练的图片编码成pixel_values
     if not args.not_cache_latents:
         latents_cache = []
         text_encoder_cache = []
@@ -695,7 +701,7 @@ def main(args):
         num_warmup_steps=args.lr_warmup_steps * args.gradient_accumulation_steps,
         num_training_steps=args.max_train_steps * args.gradient_accumulation_steps,
     )
-
+#=====是否训练文本编码.
     if args.train_text_encoder:
         unet, text_encoder, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
             unet, text_encoder, optimizer, train_dataloader, lr_scheduler
@@ -781,7 +787,7 @@ def main(args):
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
             print(f"[*] Weights saved at {save_dir}")
-
+#=====================开始训练.
     # Only show the progress bar once on each machine.
     progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
     progress_bar.set_description("Steps")
@@ -789,30 +795,33 @@ def main(args):
     loss_avg = AverageMeter()
     text_enc_context = nullcontext() if args.train_text_encoder else torch.no_grad()
     for epoch in range(args.num_train_epochs):
-        unet.train()
+        unet.train()#训练网络核心unet
         if args.train_text_encoder:
             text_encoder.train()
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(unet):
                 # Convert images to latent space
-                with torch.no_grad():
+                with torch.no_grad():#还是图片提取特征.
                     if not args.not_cache_latents:
                         latent_dist = batch[0][0]
                     else:
                         latent_dist = vae.encode(batch["pixel_values"].to(dtype=weight_dtype)).latent_dist
                     latents = latent_dist.sample() * 0.18215
 
+
+
+#=============得到噪音
                 # Sample noise that we'll add to the latents
                 noise = torch.randn_like(latents)
                 bsz = latents.shape[0]
                 # Sample a random timestep for each image
                 timesteps = torch.randint(0, noise_scheduler.config.num_train_timesteps, (bsz,), device=latents.device)
                 timesteps = timesteps.long()
-
+#==========添加噪音到图片.
                 # Add noise to the latents according to the noise magnitude at each timestep
                 # (this is the forward diffusion process)
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
-
+#=========获得文字编码.
                 # Get the text embedding for conditioning
                 with text_enc_context:
                     if not args.not_cache_latents:
@@ -822,7 +831,7 @@ def main(args):
                             encoder_hidden_states = batch[0][1]
                     else:
                         encoder_hidden_states = text_encoder(batch["input_ids"])[0]
-
+#==============模型喂入噪音图片,返回去噪后的图片model_pred
                 # Predict the noise residual
                 model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
 
@@ -833,8 +842,8 @@ def main(args):
                     target = noise_scheduler.get_velocity(latents, noise, timesteps)
                 else:
                     raise ValueError(f"Unknown prediction type {noise_scheduler.config.prediction_type}")
-
-                if args.with_prior_preservation:
+#计算loss!
+                if args.with_prior_preservation:#第一种模式也是最好的模式,我们计算class和instance2个部分.
                     # Chunk the noise and model_pred into two parts and compute the loss on each part separately.
                     model_pred, model_pred_prior = torch.chunk(model_pred, 2, dim=0)
                     target, target_prior = torch.chunk(target, 2, dim=0)
@@ -899,6 +908,9 @@ if __name__ == "__main__":
     args = parse_args()
     args.pretrained_model_name_or_path='runwayml/stable-diffusion-v1-5'
     args.pretrained_model_name_or_path='/stable-diffusion-v1-5'
+    args.pretrained_vae_name_or_path="stabilityai/sd-vae-ft-mse"
+    args.with_prior_preservation=True
+    args.prior_loss_weight=1.0
     args.output_dir=OUTPUT_DIR
     args.seed=1337
     args.resolution=512
@@ -907,7 +919,7 @@ if __name__ == "__main__":
     args.learning_rate=1e-6
     args.lr_scheduler="constant"
     args.lr_warmup_steps=0
-    args.num_class_images=50
+    args.num_class_images=200
     args.mixed_precision="no"#=====这个表示最高精度. 或者选fp16
     args.sample_batch_size=4
     args.max_train_steps=800  #=用来控制多少次steps. epoch=args.max_train_steps/训练图片数量
