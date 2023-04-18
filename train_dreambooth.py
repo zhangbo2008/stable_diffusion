@@ -1,7 +1,7 @@
 concepts_list = [
     {
         "instance_prompt":      "photo of zhangyi",
-        "instance_data_dir":    "aaa",
+        "instance_data_dir":    "aaa_only_face",
     },
 ]
 OUTPUT_DIR = "/content/" + 'model_out'
