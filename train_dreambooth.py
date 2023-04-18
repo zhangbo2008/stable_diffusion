@@ -907,7 +907,8 @@ if __name__ == "__main__":
     args.lr_warmup_steps=0
     args.num_class_images=50
     args.sample_batch_size=4
-    args.max_train_steps=800
+    args.max_train_steps=10
     args.concepts_list="concepts_list.json"
+    args.save_sample_prompt="photo of zhangyi wearing a black hat, the background of the suspense-themed movie poster"
     print(args)
     main(args)
