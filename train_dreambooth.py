@@ -906,8 +906,9 @@ if __name__ == "__main__":
     args.lr_scheduler="constant"
     args.lr_warmup_steps=0
     args.num_class_images=50
+    args.mixed_precision="no"#=====这个表示最高精度. 或者选fp16
     args.sample_batch_size=4
-    args.max_train_steps=10
+    args.max_train_steps=800  #=用来控制多少次steps. epoch=args.max_train_steps/训练图片数量
     args.concepts_list="concepts_list.json"
     args.save_sample_prompt="photo of zhangyi wearing a black hat, the background of the suspense-themed movie poster"
     print(args)
