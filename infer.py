@@ -9,7 +9,7 @@ model_path = WEIGHTS_DIR             # If you want to use previously trained mod
 
 pipe = StableDiffusionPipeline.from_pretrained(model_path, safety_checker=None, torch_dtype=torch.float16).to("cuda")
 pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
-pipe.enable_xformers_memory_efficient_attention()
+# pipe.enable_xformers_memory_efficient_attention()
 g_cuda = None
 
 prompt = "photo of zhangyi wearing a black hat, the background of the suspense-themed movie poster" #@param {type:"string"}
