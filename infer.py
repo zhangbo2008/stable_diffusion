@@ -38,3 +38,4 @@ for img in images:
 
     img.save(os.path.join(sample_dir, f"{i}.png"))
     i+=1
+    print('保存在',os.path.join(sample_dir, f"{i}.png"))
