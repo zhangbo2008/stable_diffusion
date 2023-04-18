@@ -756,7 +756,8 @@ def main(args):
             pipeline.save_pretrained(save_dir)
             with open(os.path.join(save_dir, "args.json"), "w") as f:
                 json.dump(args.__dict__, f, indent=2)
-
+            #==========
+            print('保存模型之后开始推理')
             if args.save_sample_prompt is not None:
                 pipeline = pipeline.to(accelerator.device)
                 g_cuda = torch.Generator(device=accelerator.device).manual_seed(args.seed)
@@ -773,6 +774,7 @@ def main(args):
                             generator=g_cuda
                         ).images
                         images[0].save(os.path.join(sample_dir, f"{i}.png"))
+                        print('推理保存在',os.path.join(sample_dir, f"{i}.png"))
                 del pipeline
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
@@ -874,10 +876,21 @@ def main(args):
                 break
 
         accelerator.wait_for_everyone()
-
+    print('训练完开始保存模型')
     save_weights(global_step)
 
     accelerator.end_training()
+
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -896,4 +909,5 @@ if __name__ == "__main__":
     args.sample_batch_size=4
     args.max_train_steps=800
     args.concepts_list="concepts_list.json"
+    print(args)
     main(args)
