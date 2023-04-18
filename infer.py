@@ -1,4 +1,5 @@
 import torch
+import os
 from torch import autocast
 from diffusers import StableDiffusionPipeline, DDIMScheduler
 OUTPUT_DIR = "/content/" + 'model_out'
