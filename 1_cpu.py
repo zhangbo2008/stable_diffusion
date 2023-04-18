@@ -1,7 +1,8 @@
 from diffusers import DiffusionPipeline
 from diffusers.utils import load_image
 import torch
-
+import pdb
+pdb.set_trace()  #
 pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1-unclip-small")
 
 

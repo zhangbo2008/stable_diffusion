@@ -882,7 +882,7 @@ def main(args):
 
 if __name__ == "__main__":
     args = parse_args()
-    args.pretrained_model_name_or_path='CompVis/stable-diffusion-v1-4'
+    args.pretrained_model_name_or_path='runwayml/stable-diffusion-v1-5'
     args.output_dir=OUTPUT_DIR
     args.seed=1337
     args.resolution=512
