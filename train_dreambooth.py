@@ -2,8 +2,8 @@
 
 concepts_list = [
     {
-        "instance_prompt":      "photo of zhangyi",
-        "instance_data_dir":    "aaa_only_face",
+        "instance_prompt":      "photo of zhangyi person",
+        "instance_data_dir":    "aaa",
                 "class_prompt":         "photo of a person",
         "class_data_dir":       "person_face"
     },
@@ -769,8 +769,8 @@ def main(args):
                 print('保存模型之后开始推理')
                 if args.save_sample_prompt is not None:
                     pipeline = pipeline.to(accelerator.device)
-                    # g_cuda = torch.Generator(device=accelerator.device).manual_seed(args.seed)
-                    g_cuda = torch.Generator(device=accelerator.device)
+                    g_cuda = torch.Generator(device=accelerator.device).manual_seed(args.seed)
+                    # g_cuda = torch.Generator(device=accelerator.device)
                     pipeline.set_progress_bar_config(disable=True)
                     sample_dir = os.path.join(save_dir, "samples")
                     os.makedirs(sample_dir, exist_ok=True)
