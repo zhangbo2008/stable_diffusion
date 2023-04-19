@@ -227,7 +227,7 @@ def parse_args(input_args=None):
         "--lr_warmup_steps", type=int, default=500, help="Number of steps for the warmup in the lr scheduler."
     )
     parser.add_argument(
-        "--use_8bit_adam", action="store_true", help="Whether or not to use 8-bit Adam from bitsandbytes."
+        "--use_8bit_adam", action="store_true", help="Whether or not to use 8-bit Adam from bitsandbytes."  #store_true表示用了就是true.否则为假.
     )
     parser.add_argument("--adam_beta1", type=float, default=0.9, help="The beta1 parameter for the Adam optimizer.")
     parser.add_argument("--adam_beta2", type=float, default=0.999, help="The beta2 parameter for the Adam optimizer.")
@@ -926,6 +926,7 @@ if __name__ == "__main__":
     args.sample_batch_size=4
     args.max_train_steps=800  #=用来控制多少次steps. epoch=args.max_train_steps/训练图片数量
     args.concepts_list="concepts_list.json"
+    args.use_8bit_adam=True
     args.save_sample_prompt="photo of zhangyi wearing a black hat, the background of the suspense-themed movie poster"
     print(args)
     main(args)
