@@ -5,7 +5,7 @@ concepts_list = [
         "instance_prompt":      "photo of zhangyi",
         "instance_data_dir":    "aaa_only_face",
                 "class_prompt":         "photo of a person",
-        "class_data_dir":       "person"
+        "class_data_dir":       "person_face"
     },
 ]
 OUTPUT_DIR = "/content/" + 'model_out'
@@ -330,6 +330,8 @@ class DreamBoothDataset(Dataset):
 
             if with_prior_preservation:#???????????????做什么用的????#======这个一定是要开启的. 用来提升效果. 比如输入张译, 那么class_prompt就是person. 张译是instance_prompt
                 class_img_path = [(x, concept["class_prompt"]) for x in Path(concept["class_data_dir"]).iterdir() if x.is_file()]
+                random.shuffle(class_img_path) #==============用来保证使用的图片有随机性.
+          
                 self.class_images_path.extend(class_img_path[:num_class_images])
 
         random.shuffle(self.instance_images_path)
