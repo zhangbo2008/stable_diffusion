@@ -908,7 +908,7 @@ if __name__ == "__main__":
     args = parse_args()
     args.pretrained_model_name_or_path='runwayml/stable-diffusion-v1-5'
     args.pretrained_model_name_or_path='/stable-diffusion-v1-5'
-    args.pretrained_vae_name_or_path="stabilityai/sd-vae-ft-mse"
+    args.pretrained_vae_name_or_path='/stable-diffusion-v1-5'
     args.with_prior_preservation=True
     args.prior_loss_weight=1.0
     args.output_dir=OUTPUT_DIR
